@@ -153,7 +153,20 @@
 				</section>
 			</main>
 			<footer class="pb-4">
-				<label for="file-upload" class="grid place-items-center border-2 border-gray-300 border-dashed rounded-lg h-full cursor-pointer">
+				<label
+					for="file-upload"
+					class="relative grid place-items-center border-2 border-gray-300 border-dashed rounded-lg h-full cursor-pointer"
+				>
+					<input
+						ref="videoFileInput"
+						name="file-upload"
+						type="file"
+						accept="video/*"
+						class="opacity-0 absolute w-full h-full cursor-pointer"
+						multiple
+						@input="addClip"
+						tabindex="-1"
+					/>
 					<div class="space-y-1 text-center">
 						<svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
 							<path
@@ -165,7 +178,7 @@
 						</svg>
 						<div class="flex text-sm text-gray-600">
 							<span
-								class="rounded-md font-medium text-indigo-600 hover:text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-600"
+								class="rounded-md font-medium text-indigo-600 hover:text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-600 z-20 cursor-pointer"
 							>
 								Add a video file
 								<input
@@ -177,6 +190,7 @@
 									class="sr-only"
 									multiple
 									@input="addClip"
+									tabindex="0"
 								/>
 							</span>
 							<p class="pl-1">or drag and drop</p>
@@ -185,6 +199,6 @@
 				</label>
 			</footer>
 		</div>
-		<script type="module" src="main.js"></script>
+		<script type="module" src="./main.js"></script>
 	</body>
 </html>
