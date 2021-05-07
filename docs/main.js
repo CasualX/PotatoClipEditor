@@ -1,4 +1,4 @@
-import 'tailwindcss/tailwind.css';
+// import 'tailwindcss/tailwind.css';
 
 let app = {
 	el: '#app',
