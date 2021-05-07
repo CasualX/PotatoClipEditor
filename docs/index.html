@@ -1,228 +1,190 @@
 <!DOCTYPE html>
-<html>
-<head>
-	<meta charset='utf-8'>
-	<title>Simple Clip Editor</title>
-	<meta name='viewport' content='width=device-width, initial-scale=1'>
-	<script src="deps/vue.js"></script>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Potato Clip Editor</title>
+		<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+		<script src="deps/vue.js"></script>
+		<!-- Tailwind generated classes -->
+		<link rel="stylesheet" type="text/css" href="./styles.css" />
+		<style>
+			/* Add custom styles here */
+		</style>
+	</head>
+	<body>
+		<div id="app" class="grid grid-rows-[auto,1fr,128px] gap-8 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 h-screen py-8">
+			<!-- We've used 3xl here, but feel free to try other max-widths based n your needs -->
+			<header class="bg-gradient-to-br from-indigo-800 to-indigo-500 pb-2 bg-clip-text">
+				<h1 class="text-5xl italic font-bold text-transparent">Potato Clip Editor</h1>
+			</header>
+			<main class="flex flex-col-reverse gap-8 lg:flex-row" v-if="clips.length > 0">
+				<section id="timeline" class="min-w-[400px] flex flex-col">
+					<span class="uppercase font-medium text-gray-600 text-sm pb-4">Timeline</span>
+					<ul class="flex flex-col space-y-2">
+						<li
+							v-for="clip in clips"
+							:key="clip.key"
+							tabindex="0"
+							@click="selectPreview(clip.key)"
+							class="flex flex-col p-2 cursor-pointer bg-white rounded-lg border border-gray-300 hover:border-gray-400 focus:outline-none focus:ring-1 ring-indigo-600"
+							:class="{ 'border-indigo-600 hover:border-indigo-600': previewKey === clip.key }"
+						>
+							<div class="flex">
+								<span class="font-semibold text-gray-800">{{ clip.name }}</span>
+								<div class="flex ml-auto space-x-1 items-start">
+									<button
+										@click="duplicateClip(clip.key)"
+										class="p-1 rounded text-gray-400 hover:text-indigo-600 focus:text-indigo-600 focus:outline-none focus:ring-1 ring-indigo-600"
+									>
+										<svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+											<path
+												stroke="currentColor"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="1.5"
+												d="M6.5 15.25V15.25C5.5335 15.25 4.75 14.4665 4.75 13.5V6.75C4.75 5.64543 5.64543 4.75 6.75 4.75H13.5C14.4665 4.75 15.25 5.5335 15.25 6.5V6.5"
+											></path>
+											<rect
+												width="10.5"
+												height="10.5"
+												x="8.75"
+												y="8.75"
+												stroke="currentColor"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="1.5"
+												rx="2"
+											></rect>
+										</svg>
+									</button>
+									<button
+										@click="removeClip(clip.key)"
+										class="p-1 rounded text-gray-400 hover:text-red-600 focus:text-red-600 focus:outline-none focus:ring-1 ring-red-600"
+									>
+										<svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+											<path
+												stroke="currentColor"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="1.5"
+												d="M6.75 7.75L7.59115 17.4233C7.68102 18.4568 8.54622 19.25 9.58363 19.25H14.4164C15.4538 19.25 16.319 18.4568 16.4088 17.4233L17.25 7.75"
+											></path>
+											<path
+												stroke="currentColor"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="1.5"
+												d="M9.75 7.5V6.75C9.75 5.64543 10.6454 4.75 11.75 4.75H12.25C13.3546 4.75 14.25 5.64543 14.25 6.75V7.5"
+											></path>
+											<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 7.75H19"></path>
+										</svg>
+									</button>
+								</div>
+							</div>
+							<div class="text-gray-600">
+								<span>{{ renderTime(clip.startTime) }}</span>
+								-
+								<span>{{ renderTime(clip.endTime) }}</span>
+							</div>
+						</li>
+					</ul>
+				</section>
+				<section id="preview" class="flex flex-col w-full h-full">
+					<span class="uppercase font-medium text-gray-600 text-sm pb-4">Preview</span>
+					<div v-for="clip in clips" :key="clip.key" class="space-y-4" :class="[previewKey === clip.key ? 'block' : 'hidden']">
+						<div class="aspect-w-16 aspect-h-9">
+							<video :src="clip.url" controls muted :ref="setVideoRef(clip)" v-on:loadedmetadata="setMetadata(clip)"></video>
+						</div>
+						<div class="flex items-center justify-between">
+							<input
+								type="text"
+								:value="renderTime(clip.startTime)"
+								class="w-[10ch] text-gray-700 border-gray-300 rounded-md focus:ring-indigo-600 focus:ring-offset-indigo-600 focus:border-indigo-600"
+								readonly
+							/>
+							<div class="flex">
+								<button
+									@click="setStartTime(clip)"
+									class="text-gray-400 border border-gray-300 hover:border-indigo-600 focus:border-indigo-600 hover:text-indigo-600 focus:text-indigo-600 p-2 rounded-l-md focus:outline-none focus:ring-1 focus:ring-indigo-600 z-10"
+								>
+									<svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+										<path
+											stroke="currentColor"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="1.5"
+											d="M10.25 6.75L4.75 12L10.25 17.25"
+										></path>
+										<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.25 12H5"></path>
+									</svg>
+								</button>
+								<input
+									type="text"
+									:value="renderTime(clip.endTime - clip.startTime)"
+									class="w-[10ch] text-gray-700 border-gray-300 border-l-0 border-r-0 focus:ring-indigo-600 focus:ring-offset-indigo-600 focus:border-indigo-600"
+									readonly
+								/>
+								<button
+									@click="setEndTime(clip)"
+									class="text-gray-400 border border-gray-300 hover:border-indigo-600 focus:border-indigo-600 hover:text-indigo-600 focus:text-indigo-600 p-2 rounded-r-md focus:outline-none focus:ring-1 focus:ring-indigo-600"
+								>
+									<svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+										<path
+											stroke="currentColor"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="1.5"
+											d="M13.75 6.75L19.25 12L13.75 17.25"
+										></path>
+										<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 12H4.75"></path>
+									</svg>
+								</button>
+							</div>
 
-<style>
-html, body {
-	width: 100%;
-	height: 100%;
-	margin: 0;
-	padding: 0;
-}
-.fill {
-	width: 100%;
-	height: 100%;
-	overflow: hidden;
-}
-#app {
-	display: grid;
-	grid-template: 84px auto 32px / auto;
-}
-header {
-	display: grid;
-}
-main {
-	display: grid;
-	grid-template: auto / 480px auto;
-}
-
-#timeline {
-	display: grid;
-	grid-template: min-content auto min-content / auto;
-}
-#timeline>ul {
-	display: flex;
-	flex-direction: column;
-	margin: 0;
-	padding: 0;
-}
-#timeline>ul>li {
-	display: grid;
-	grid-template: 22px 22px / 300px 100px 80px;
-	grid-template-areas:
-		"name from dup"
-		"name to   rem";
-	align-items: center;
-	margin: 0;
-	padding: 0;
-	cursor: pointer;
-}
-#timeline>ul>li.active {
-	background-color: lightblue;
-}
-#timeline>ul>li>.time {
-	justify-self: right;
-}
-#timeline>ul>li>.time>span:first-child {
-	color: grey;
-}
-#timeline>ul>li>.splice {
-	visibility: hidden;
-}
-#timeline>ul>li:hover>.splice {
-	visibility: visible;
-}
-
-#preview {
-	display: grid;
-}
-#preview > .preview--clip {
-	display: none;
-}
-#preview > .preview--clip.active {
-	display: grid;
-}
-#preview > .preview--clip > video {
-	object-fit: contain;
-}
-#preview > .preview--clip > .preview--setTime {
-	display: flex;
-	justify-content: space-between;
-}
-</style>
-</head>
-<body id="app">
-	<header>
-		<h1>Simple Clip Editor</h1>
-	</header>
-	<main class="fill">
-		<div id="timeline" class="fill">
-			<div>Timeline</div>
-			<ul>
-				<li v-for="clip in clips" :key="clip.key" @click="selectPreview(clip.key)" :class="{'active': previewKey === clip.key}">
-					<div class="name" style="grid-area: name">{{ clip.name }}</div>
-					<div class="time" style="grid-area: from"><span>from </span><span>{{ renderTime(clip.startTime) }}</span></div>
-					<div class="time" style="grid-area: to"><span>to </span><span>{{ renderTime(clip.endTime) }}</span></div>
-					<button class="splice" style="grid-area: dup" @click="duplicateClip(clip.key)">Duplicate</button>
-					<button class="splice" style="grid-area: rem" @click="removeClip(clip.key)">Remove</button>
-				</li>
-			</ul>
+							<input
+								type="text"
+								:value="renderTime(clip.endTime)"
+								class="w-[10ch] text-gray-700 border-gray-300 rounded-md focus:ring-indigo-600 focus:ring-offset-indigo-600 focus:border-indigo-600"
+								readonly
+							/>
+						</div>
+					</div>
+				</section>
+			</main>
+			<footer class="pb-4">
+				<label for="file-upload" class="grid place-items-center border-2 border-gray-300 border-dashed rounded-lg h-full cursor-pointer">
+					<div class="space-y-1 text-center">
+						<svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+							<path
+								d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						<div class="flex text-sm text-gray-600">
+							<span
+								class="rounded-md font-medium text-indigo-600 hover:text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-600"
+							>
+								Add a video file
+								<input
+									ref="videoFileInput"
+									id="file-upload"
+									name="file-upload"
+									type="file"
+									accept="video/*"
+									class="sr-only"
+									multiple
+									@input="addClip"
+								/>
+							</span>
+							<p class="pl-1">or drag and drop</p>
+						</div>
+					</div>
+				</label>
+			</footer>
 		</div>
-		<div id="preview" class="fill">
-			<div v-for="clip in clips" :key="clip.key" class="preview--clip fill" :class="{'active': previewKey === clip.key}">
-				<video :src="clip.url" controls muted :ref="setVideoRef(clip)" v-on:loadedmetadata="setMetadata(clip)" class="fill"></video>
-				<div class="preview--setTime">
-					<span><input type="text" :value="renderTime(clip.startTime)" readonly><button @click="setStartTime(clip)"><-</button></span>
-					<span><input type="text" :value="renderTime(clip.endTime - clip.startTime)" readonly></span>
-					<span><button @click="setEndTime(clip)">-></button><input type="text" :value="renderTime(clip.endTime)" readonly></span>
-				</div>
-			</div>
-		</div>
-	</main>
-	<div><label>Add Video Files...<input ref="videoFileInput" type="file" accept="video/*" multiple hidden @input="addClip"></label></div>
-</body>
-<script>
-let app = {
-	el: '#app',
-	data() {
-		return {
-			// Clip currently being previewed
-			// If out of bounds then no preview is selected
-			previewKey: 0,
-			// Unique key for the next clip added
-			nextKey: 0,
-			// List of clips on the timeline
-			// See `addClip` for the child object structure
-			clips: [],
-		};
-	},
-	methods: {
-		renderTime(time) {
-			let msecs = Math.floor((time - Math.floor(time)) * 1000);
-			let secs = Math.floor(time % 60);
-			let mins = Math.floor(time / 60);
-			let hours = Math.floor(time / 3600);
-			let tail = secs.toString().padStart(2, "0") + "." + msecs.toString().padStart(3, "0");
-			return hours == 0 ?
-				"" + mins + ":" + tail :
-				"" + hours + ":" + mins.toString().padStart(2, "0") + ":" + tail;
-		},
-		addClip(e) {
-			let files = e.target.files;
-			for (let i = 0; i < files.length; i += 1) {
-				let file = files[i];
-				let clip = {
-					key: this.nextKey++,
-					name: file.name,
-					startTime: 0,
-					endTime: 0,
-					url: URL.createObjectURL(file),
-					videoRef: null, // Filled in later in `setVideoRef`
-				};
-				if (i == 0) {
-					this.previewKey = clip.key;
-				}
-				this.clips.push(clip);
-			}
-		},
-		setVideoRef(clip) {
-			return videoRef => {
-				clip.videoRef = videoRef;
-			};
-		},
-		setMetadata(clip) {
-			clip.endTime = clip.videoRef.duration;
-		},
-		setStartTime(clip) {
-			clip.startTime = clip.videoRef.currentTime;
-			if (clip.startTime > clip.endTime) {
-				clip.endTime = clip.videoRef.currentTime;
-			}
-		},
-		setEndTime(clip) {
-			clip.endTime = clip.videoRef.currentTime;
-			if (clip.endTime < clip.startTime) {
-				clip.startTime = clip.videoRef.currentTime;
-			}
-		},
-		removeClip(key) {
-			let index = this.clips.findIndex(clip => clip.key == key);
-			// FIXME! Leaking object URL here...
-			// Multiple clips can refer to the same object URL so they need to be reference counted
-			this.clips.splice(index, 1);
-			// Move the current preview to the next clip (if any)
-			if (index < this.clips.length) {
-				this.previewKey = this.clips[index].key;
-			}
-			else if (index > 0) {
-				this.previewKey = this.clips[index - 1].key;
-			}
-		},
-		duplicateClip(key) {
-			let index = this.clips.findIndex(clip => clip.key == key);
-			let clip = this.clips[index];
-			let newClip = {
-				key: this.nextKey++,
-				name: clip.name,
-				startTime: clip.startTime,
-				endTime: clip.endTime,
-				url: clip.url,
-				videoRef: null, // Filled in later in `setVideoRef`
-			};
-			this.previewKey = newClip.key;
-			this.clips.splice(index + 1, 0, newClip);
-		},
-		pauseAll() {
-			for (let i = 0; i < this.clips.length; i += 1) {
-				let clip = this.clips[i];
-				if (clip.videoRef) {
-					clip.videoRef.pause();
-				}
-			}
-		},
-		selectPreview(key) {
-			if (key != this.previewKey) {
-				// Pause all running video players when switching
-				this.pauseAll();
-				this.previewKey = key;
-			}
-		},
-	},
-};
-Vue.createApp(app).mount('#app');
-</script>
+		<script type="module" src="main.js"></script>
+	</body>
 </html>
