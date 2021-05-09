@@ -10,6 +10,19 @@
 		<link rel="stylesheet" type="text/css" href="./styles.css" />
 		<style>
 			/* Add custom styles here */
+			#export {
+				display: none;
+				position: fixed;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0, 0, 0, 25%);
+				z-index: 99;
+				left: 0;
+				top: 0;
+			}
+			#export.enable {
+				display: block;
+			}
 		</style>
 	</head>
 	<body>
@@ -34,7 +47,7 @@
 								<span class="font-semibold text-gray-800">{{ clip.name }}</span>
 								<div class="flex ml-auto space-x-1 items-start">
 									<button
-										@click="duplicateClip(clip.key)"
+										@click.stop="duplicateClip(clip.key)"
 										class="p-1 rounded text-gray-400 hover:text-indigo-600 focus:text-indigo-600 focus:outline-none focus:ring-1 ring-indigo-600"
 									>
 										<svg width="24" height="24" fill="none" viewBox="0 0 24 24">
@@ -59,7 +72,7 @@
 										</svg>
 									</button>
 									<button
-										@click="removeClip(clip.key)"
+										@click.stop="removeClip(clip.key)"
 										class="p-1 rounded text-gray-400 hover:text-red-600 focus:text-red-600 focus:outline-none focus:ring-1 ring-red-600"
 									>
 										<svg width="24" height="24" fill="none" viewBox="0 0 24 24">
@@ -83,18 +96,17 @@
 								</div>
 							</div>
 							<div class="text-gray-600">
-								<span>{{ renderTime(clip.startTime) }}</span>
-								-
-								<span>{{ renderTime(clip.endTime) }}</span>
+								<span>{{ renderTime(clip.startTime) }}</span> - <span>{{ renderTime(clip.endTime) }}</span>
 							</div>
 						</li>
 					</ul>
+					<div><button @click="options.show = true;">Export Clips</button></div>
 				</section>
 				<section id="preview" class="flex flex-col w-full h-full">
 					<span class="uppercase font-medium text-gray-600 text-sm pb-4">Preview</span>
 					<div v-for="clip in clips" :key="clip.key" class="space-y-4" :class="[previewKey === clip.key ? 'block' : 'hidden']">
 						<div class="aspect-w-16 aspect-h-9">
-							<video :src="clip.url" controls muted :ref="setVideoRef(clip)" v-on:loadedmetadata="setMetadata(clip)"></video>
+							<video :src="clip.url" controls muted :ref="setVideoRef(clip)" @loadedmetadata="setMetadata(clip)" @timeupdate="videoTimeUpdate(clip)"></video>
 						</div>
 						<div class="flex items-center justify-between">
 							<input
@@ -121,7 +133,7 @@
 								</button>
 								<input
 									type="text"
-									:value="renderTime(clip.endTime - clip.startTime)"
+									:value="renderTime(clip.currentTime)"
 									class="w-[10ch] text-gray-700 border-gray-300 border-l-0 border-r-0 focus:ring-indigo-600 focus:ring-offset-indigo-600 focus:border-indigo-600"
 									readonly
 								/>
@@ -198,6 +210,14 @@
 					</div>
 				</label>
 			</footer>
+			<div id="export" :class="{'enable': options.show}" @click="options.show = false;">
+				<div @click.stop>
+					<div><label>Ffmpeg path:</label><input type="text" autocomplete="yes" id="ffmpeg-path" v-model="options.ffmpeg"></div>
+					<div><label>Codec argument:</label><input type="text" autocomplete="yes" id="codec-argument" v-model="options.codec"></div>
+					<div><label>Copy command:</label><button @click="copyCommand">Click me</button></div>
+					<textarea style="position: absolute; left: -999999px;" readonly="readonly" ref="exportTextArea"></textarea>
+				</div>
+			</div>
 		</div>
 		<script type="module" src="./main.js"></script>
 	</body>
