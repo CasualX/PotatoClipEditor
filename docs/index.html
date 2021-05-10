@@ -10,30 +10,17 @@
 		<link rel="stylesheet" type="text/css" href="./styles.css" />
 		<style>
 			/* Add custom styles here */
-			#export {
-				display: none;
-				position: fixed;
-				width: 100%;
-				height: 100%;
-				background-color: rgba(0, 0, 0, 25%);
-				z-index: 99;
-				left: 0;
-				top: 0;
-			}
-			#export.enable {
-				display: block;
-			}
 		</style>
 	</head>
 	<body>
-		<div id="app" class="grid grid-rows-[auto,1fr,128px] gap-8 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 h-screen py-8">
+		<div id="app" class="grid grid-rows-[auto,1fr,128px] gap-8 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 h-screen">
 			<!-- We've used 3xl here, but feel free to try other max-widths based n your needs -->
-			<header class="bg-gradient-to-br from-indigo-800 to-indigo-500 pb-2 bg-clip-text">
+			<header class="bg-gradient-to-br from-indigo-800 to-indigo-500 pt-4 pb-2 bg-clip-text">
 				<h1 class="text-5xl italic font-bold text-transparent">Potato Clip Editor</h1>
 			</header>
-			<main class="flex flex-col-reverse gap-8 lg:flex-row" v-if="clips.length > 0">
-				<section id="timeline" class="min-w-[400px] flex flex-col">
-					<span class="uppercase font-medium text-gray-600 text-sm pb-4">Timeline</span>
+			<main class="flex flex-col-reverse gap-8 lg:flex-row" v-if="clips.length > 0 && !options.show">
+				<section id="timeline" class="min-w-[400px] lg:max-h-[calc(100vh-280px)] flex flex-col lg:overflow-y-auto px-px">
+					<span class="uppercase font-medium text-gray-600 text-sm pb-4 pl-px">Timeline</span>
 					<ul class="flex flex-col space-y-2">
 						<li
 							v-for="clip in clips"
@@ -96,17 +83,25 @@
 								</div>
 							</div>
 							<div class="text-gray-600">
-								<span>{{ renderTime(clip.startTime) }}</span> - <span>{{ renderTime(clip.endTime) }}</span>
+								<span>{{ renderTime(clip.startTime) }}</span>
+								-
+								<span>{{ renderTime(clip.endTime) }}</span>
 							</div>
 						</li>
 					</ul>
-					<div><button @click="options.show = true;">Export Clips</button></div>
 				</section>
 				<section id="preview" class="flex flex-col w-full h-full">
 					<span class="uppercase font-medium text-gray-600 text-sm pb-4">Preview</span>
 					<div v-for="clip in clips" :key="clip.key" class="space-y-4" :class="[previewKey === clip.key ? 'block' : 'hidden']">
 						<div class="aspect-w-16 aspect-h-9">
-							<video :src="clip.url" controls muted :ref="setVideoRef(clip)" @loadedmetadata="setMetadata(clip)" @timeupdate="videoTimeUpdate(clip)"></video>
+							<video
+								:src="clip.url"
+								controls
+								muted
+								:ref="setVideoRef(clip)"
+								@loadedmetadata="setMetadata(clip)"
+								@timeupdate="videoTimeUpdate(clip)"
+							></video>
 						</div>
 						<div class="flex items-center justify-between">
 							<input
@@ -161,10 +156,18 @@
 								readonly
 							/>
 						</div>
+						<div class="flex justify-end">
+							<button
+								@click="options.show = true;"
+								class="text-white bg-indigo-600 hover:bg-indigo-500 border p-2 rounded-md focus:outline-none focus:ring-2 ring-offset-2 focus:ring-indigo-600"
+							>
+								Export Clips
+							</button>
+						</div>
 					</div>
 				</section>
 			</main>
-			<footer class="pb-4">
+			<footer class="pb-4" v-if="!options.show">
 				<label
 					for="file-upload"
 					class="relative grid place-items-center border-2 border-gray-300 border-dashed rounded-lg h-full cursor-pointer"
@@ -210,12 +213,75 @@
 					</div>
 				</label>
 			</footer>
-			<div id="export" :class="{'enable': options.show}" @click="options.show = false;">
-				<div @click.stop>
-					<div><label>Ffmpeg path:</label><input type="text" autocomplete="yes" id="ffmpeg-path" v-model="options.ffmpeg"></div>
-					<div><label>Codec argument:</label><input type="text" autocomplete="yes" id="codec-argument" v-model="options.codec"></div>
-					<div><label>Copy command:</label><button @click="copyCommand">Click me</button></div>
-					<textarea style="position: absolute; left: -999999px;" readonly="readonly" ref="exportTextArea"></textarea>
+			<div id="export" v-if="options.show" class="flex flex-col" style="grid-row: 2 / span 2">
+				<textarea class="sr-only" readonly="readonly" ref="exportTextArea"></textarea>
+				<div class="grid grid-cols-1 lg:grid-cols-[300px,2fr] items-center gap-2 lg:gap-8">
+					<label class="uppercase font-medium text-gray-600 text-sm">Ffmpeg path</label>
+					<input
+						type="text"
+						autocomplete="yes"
+						id="ffmpeg-path"
+						v-model="options.ffmpeg"
+						class="focus:ring-indigo-600 focus:ring-offset-indigo-600 focus:border-indigo-600"
+					/>
+					<label class="uppercase font-medium text-gray-600 text-sm mt-4 lg:mt-0">Codec argument</label>
+					<input
+						type="text"
+						autocomplete="yes"
+						id="codec-argument"
+						v-model="options.codec"
+						class="focus:ring-indigo-600 focus:ring-offset-indigo-600 focus:border-indigo-600"
+					/>
+				</div>
+				<div
+					class="flex flex-col justify-between lg:items-end space-y-4 space-x-0 lg:space-y-0 lg:flex-row lg:space-x-4 mt-auto lg:mt-0 py-8"
+				>
+					<button
+						@click="options.show = false;"
+						class="flex space-x-2 text-black bg-white hover:bg-gray-50 hover:text-gray-800 border-gray-700 hover:border-gray-500 border p-2 rounded-md focus:outline-none focus:ring-2 ring-offset-2 focus:ring-indigo-600"
+					>
+						<svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+							<path
+								stroke="currentColor"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M9.25 4.75L4.75 9L9.25 13.25"
+							></path>
+							<path
+								stroke="currentColor"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M5.5 9H15.25C17.4591 9 19.25 10.7909 19.25 13V19.25"
+							></path>
+						</svg>
+
+						<span>Return</span>
+					</button>
+					<button
+						@click="copyCommand(); options.show = false;"
+						class="flex space-x-2 text-white bg-indigo-600 hover:bg-indigo-500 border p-2 rounded-md focus:outline-none focus:ring-2 ring-offset-2 focus:ring-indigo-600"
+					>
+						<svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+							<path
+								stroke="currentColor"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M4.75 14.75V16.25C4.75 17.9069 6.09315 19.25 7.75 19.25H16.25C17.9069 19.25 19.25 17.9069 19.25 16.25V14.75"
+							></path>
+							<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14.25L12 4.75"></path>
+							<path
+								stroke="currentColor"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M8.75 10.75L12 14.25L15.25 10.75"
+							></path>
+						</svg>
+						<span>Copy to clipboard</span>
+					</button>
 				</div>
 			</div>
 		</div>
