@@ -29,7 +29,7 @@ let app = {
 			// Export related options
 			options: {
 				show: false,
-				name: "output.mp4",
+				filename: "output.mp4",
 				ffmpeg: "ffmpeg.exe",
 				codec: "-vcodec h264 -acodec copy",
 			},
@@ -62,7 +62,9 @@ let app = {
 			};
 		},
 		setMetadata(clip) {
-			clip.endTime = clip.videoRef.duration;
+			if (clip.endTime == 0.0) {
+				clip.endTime = clip.videoRef.duration;
+			}
 			clip.videoRef.currentTime = clip.currentTime;
 		},
 		videoTimeUpdate(clip) {
@@ -124,6 +126,28 @@ let app = {
 				this.previewKey = key;
 			}
 		},
+		startExport() {
+			this.pauseAll();
+			this.options.show = true;
+
+			// Remember settings from localStorage
+			try {
+				this.options.ffmpeg = localStorage.getItem("ffmpeg") || this.options.ffmpeg;
+				this.options.codec = localStorage.getItem("codec") || this.options.codec;
+				this.options.filename = localStorage.getItem("filename") || this.options.filename;
+			}
+			catch (ex) {
+				console.error(ex);
+			}
+		},
+		saveOption(variable) {
+			try {
+				localStorage.setItem(variable, this.options[variable]);
+			}
+			catch (ex) {
+				console.error(ex);
+			}
+		},
 		copyCommand() {
 			let textArea = this.$refs.exportTextArea;
 			textArea.value = exportWinCmd(this.clips, this.options);
@@ -143,6 +167,10 @@ Vue.createApp(app).mount('#app');
 
 // Escapes cmd.exe argument strings containing double quotes
 function escapeCmd(s) {
+	// If string is already quoted assume it is already escaped and just return it
+	if (/^"(.*)"$/s.test(s)) {
+		return s;
+	}
 	return "\"" + s.replace("\"", "^\"") + "\"";
 }
 
@@ -163,13 +191,17 @@ function quoteFfmpeg(s) {
 }
 
 function exportWinCmd(clips, options) {
+	if (clips.length == 1) {
+		let clip = clips[0];
+		return `${escapeCmd(options.ffmpeg)} -i ${escapeCmd(clip.name)} ${options.codec} -ss ${renderTime(clip.startTime)} -to ${renderTime(clip.endTime)} ${escapeCmd(options.filename)}\n`;
+	}
 	let cmd = `SET FFMPEG=${escapeCmd(options.ffmpeg)}\nMKDIR tmp\nTYPE NUL>tmp\\parts.txt\n`;
 	for (let i = 0; i < clips.length; i += 1) {
 		let clip = clips[i];
 		cmd += `%FFMPEG% -i ${escapeCmd(clip.name)} ${options.codec} -ss ${renderTime(clip.startTime)} -to ${renderTime(clip.endTime)} "tmp\\part${i}.mp4"<NUL\n`;
 		cmd += `ECHO file 'tmp/part${i}.mp4'>>tmp\\parts.txt\n`;
 	}
-	cmd += `%FFMPEG% -f concat -i "tmp\\parts.txt" -c copy ${escapeCmd(options.name)}<NUL\n`;
+	cmd += `%FFMPEG% -f concat -i "tmp\\parts.txt" -c copy ${escapeCmd(options.filename)}<NUL\n`;
 	cmd += "DEL /Q";
 	for (let i = 0; i < clips.length; i += 1) {
 		cmd += ` tmp\\part${i}.mp4`;
