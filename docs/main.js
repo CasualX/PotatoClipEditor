@@ -149,16 +149,25 @@ let app = {
 			}
 		},
 		copyCommand() {
-			let textArea = this.$refs.exportTextArea;
+			let textArea = document.createElement('textarea');
 			textArea.value = exportWinCmd(this.clips, this.options);
+			document.body.appendChild(textArea);
 			textArea.select();
+			let success;
 			try {
 				document.execCommand("copy");
-				alert("The processing commands were successfully copied to your clipboard!");
+				success = true;
 			}
 			catch (ex) {
 				console.error(ex);
-				alert("There was an error copying the processing commands...")
+				success = false;
+			}
+			document.body.removeChild(textArea);
+			if (success) {
+				alert("The processing commands were successfully copied to your clipboard!");
+			}
+			else {
+				alert("There was an error copying the processing commands...");
 			}
 		},
 	},
