@@ -24,7 +24,7 @@ let app = {
 			// Unique key for the next clip added
 			nextKey: 0,
 			// List of clips on the timeline
-			// See `addClip` for the child object structure
+			// See `timelineAdd` for the child object structure
 			clips: [],
 			// Export related options
 			options: {
@@ -37,7 +37,7 @@ let app = {
 	},
 	methods: {
 		renderTime: renderTime,
-		addClip(e) {
+		timelineAdd(e) {
 			let files = e.target.files;
 			for (let i = 0; i < files.length; i += 1) {
 				let file = files[i];
@@ -48,7 +48,7 @@ let app = {
 					currentTime: 0,
 					endTime: 0,
 					url: URL.createObjectURL(file),
-					videoRef: null // Filled in later in `setVideoRef`
+					videoRef: null // Filled in later in `videoSetRef`
 				};
 				if (i == 0) {
 					this.previewKey = clip.key;
@@ -56,12 +56,46 @@ let app = {
 				this.clips.push(clip);
 			}
 		},
-		setVideoRef(clip) {
+		timelineRemove(key) {
+			let index = this.clips.findIndex(clip => clip.key == key);
+			// FIXME! Leaking object URL here...
+			// Multiple clips can refer to the same object URL so they need to be reference counted
+			this.clips.splice(index, 1);
+			// If the current preview is the delete clip
+			if (this.previewKey == key) {
+				// Move the current preview to the next clip (if any)
+				let nextKey = index < this.clips.length ? this.clips[index].key : index > 0 ? this.clips[index - 1].key : -1;
+				this.timelinePreview(nextKey);
+			}
+		},
+		timelineClone(key) {
+			let index = this.clips.findIndex(clip => clip.key == key);
+			let clip = this.clips[index];
+			let newClip = {
+				key: this.nextKey++,
+				name: clip.name,
+				startTime: clip.startTime,
+				currentTime: clip.currentTime,
+				endTime: clip.endTime,
+				url: clip.url,
+				videoRef: null // Filled in later in `videoSetRef`
+			};
+			this.clips.splice(index + 1, 0, newClip);
+			this.timelinePreview(newClip.key);
+		},
+		timelinePreview(key) {
+			if (key != this.previewKey) {
+				// Pause all running video players when switching
+				this.pauseAll();
+				this.previewKey = key;
+			}
+		},
+		videoSetRef(clip) {
 			return videoRef => {
 				clip.videoRef = videoRef;
 			};
 		},
-		setMetadata(clip) {
+		videoLoadedMetadata(clip) {
 			if (clip.endTime == 0.0) {
 				clip.endTime = clip.videoRef.duration;
 			}
@@ -84,33 +118,6 @@ let app = {
 				clip.startTime = clip.videoRef.currentTime;
 			}
 		},
-		removeClip(key) {
-			let index = this.clips.findIndex(clip => clip.key == key);
-			// FIXME! Leaking object URL here...
-			// Multiple clips can refer to the same object URL so they need to be reference counted
-			this.clips.splice(index, 1);
-			// If the current preview is the delete clip
-			if (this.previewKey == key) {
-				// Move the current preview to the next clip (if any)
-				let nextKey = index < this.clips.length ? this.clips[index].key : index > 0 ? this.clips[index - 1].key : -1;
-				this.selectPreview(nextKey);
-			}
-		},
-		duplicateClip(key) {
-			let index = this.clips.findIndex(clip => clip.key == key);
-			let clip = this.clips[index];
-			let newClip = {
-				key: this.nextKey++,
-				name: clip.name,
-				startTime: clip.startTime,
-				currentTime: clip.currentTime,
-				endTime: clip.endTime,
-				url: clip.url,
-				videoRef: null // Filled in later in `setVideoRef`
-			};
-			this.clips.splice(index + 1, 0, newClip);
-			this.selectPreview(newClip.key);
-		},
 		pauseAll() {
 			for (let i = 0; i < this.clips.length; i += 1) {
 				let clip = this.clips[i];
@@ -119,22 +126,15 @@ let app = {
 				}
 			}
 		},
-		selectPreview(key) {
-			if (key != this.previewKey) {
-				// Pause all running video players when switching
-				this.pauseAll();
-				this.previewKey = key;
-			}
-		},
 		startExport() {
 			this.pauseAll();
 			this.options.show = true;
 
 			// Remember settings from localStorage
 			try {
-				this.options.ffmpeg = localStorage.getItem("ffmpeg") || this.options.ffmpeg;
-				this.options.codec = localStorage.getItem("codec") || this.options.codec;
-				this.options.filename = localStorage.getItem("filename") || this.options.filename;
+				this.options.ffmpeg = localStorage.getItem("PCE/" + "ffmpeg") ?? this.options.ffmpeg;
+				this.options.codec = localStorage.getItem("PCE/" + "codec") ?? this.options.codec;
+				this.options.filename = localStorage.getItem("PCE/" + "filename") ?? this.options.filename;
 			}
 			catch (ex) {
 				console.error(ex);
@@ -142,7 +142,7 @@ let app = {
 		},
 		saveOption(variable) {
 			try {
-				localStorage.setItem(variable, this.options[variable]);
+				localStorage.setItem("PCE/" + variable, this.options[variable]);
 			}
 			catch (ex) {
 				console.error(ex);
@@ -191,21 +191,24 @@ function quoteFfmpeg(s) {
 }
 
 function exportWinCmd(clips, options) {
+	let ffmpeg = escapeCmd(options.ffmpeg);
+	let filename = escapeCmd(options.filename);
 	if (clips.length == 1) {
 		let clip = clips[0];
-		return `${escapeCmd(options.ffmpeg)} -i ${escapeCmd(clip.name)} ${options.codec} -ss ${renderTime(clip.startTime)} -to ${renderTime(clip.endTime)} ${escapeCmd(options.filename)}\n`;
+		return `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec} -ss ${renderTime(clip.startTime)} -to ${renderTime(clip.endTime)} ${filename}\n`;
 	}
-	let cmd = `SET FFMPEG=${escapeCmd(options.ffmpeg)}\nMKDIR tmp\nTYPE NUL>tmp\\parts.txt\n`;
+	let tmp = "tmp" + Math.random().toString(16).slice(2);
+	let cmd = `MKDIR ${tmp}\nTYPE NUL>"${tmp}\\parts.txt"\n`;
 	for (let i = 0; i < clips.length; i += 1) {
 		let clip = clips[i];
-		cmd += `%FFMPEG% -i ${escapeCmd(clip.name)} ${options.codec} -ss ${renderTime(clip.startTime)} -to ${renderTime(clip.endTime)} "tmp\\part${i}.mp4"<NUL\n`;
-		cmd += `ECHO file 'tmp/part${i}.mp4'>>tmp\\parts.txt\n`;
+		cmd += `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec} -ss ${renderTime(clip.startTime)} -to ${renderTime(clip.endTime)} "${tmp}\\part${i}.mp4"<NUL\n`;
+		cmd += `ECHO file '${tmp}/part${i}.mp4'>>"${tmp}\\parts.txt"\n`;
 	}
-	cmd += `%FFMPEG% -f concat -i "tmp\\parts.txt" -c copy ${escapeCmd(options.filename)}<NUL\n`;
+	cmd += `${ffmpeg} -f concat -i "${tmp}\\parts.txt" -c copy ${filename}<NUL\n`;
 	cmd += "DEL /Q";
 	for (let i = 0; i < clips.length; i += 1) {
-		cmd += ` tmp\\part${i}.mp4`;
+		cmd += ` "${tmp}\\part${i}.mp4"`;
 	}
-	cmd += ` tmp\\parts.txt\nRMDIR tmp\n`;
+	cmd += ` "${tmp}\\parts.txt"\nRMDIR ${tmp}\n`;
 	return cmd;
 }
