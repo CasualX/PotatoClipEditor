@@ -74,9 +74,9 @@ let app = {
 			let newClip = {
 				key: this.nextKey++,
 				name: clip.name,
-				startTime: clip.startTime,
+				startTime: 0,
 				currentTime: clip.currentTime,
-				endTime: clip.endTime,
+				endTime: 0,
 				url: clip.url,
 				videoRef: null // Filled in later in `videoSetRef`
 			};
@@ -88,6 +88,11 @@ let app = {
 				// Pause all running video players when switching
 				this.pauseAll();
 				this.previewKey = key;
+			}
+			// Rewind the player to the start of the clip
+			let clip = this.clips.find(clip => clip.key == key);
+			if (clip && clip.videoRef) {
+				clip.videoRef.currentTime = clip.startTime;
 			}
 		},
 		videoSetRef(clip) {
@@ -103,6 +108,10 @@ let app = {
 		},
 		videoTimeUpdate(clip) {
 			if (clip.videoRef) {
+				// Pause the video when the end of the clip is reached
+				if (clip.currentTime < clip.endTime && clip.videoRef.currentTime >= clip.endTime) {
+					clip.videoRef.pause();
+				}
 				clip.currentTime = clip.videoRef.currentTime;
 			}
 		},
