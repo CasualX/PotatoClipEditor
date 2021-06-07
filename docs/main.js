@@ -8,7 +8,7 @@ window.addEventListener('beforeunload', function(e) {
 function renderTime(time) {
 	let msecs = Math.floor((time - Math.floor(time)) * 1000);
 	let secs = Math.floor(time % 60);
-	let mins = Math.floor(time / 60);
+	let mins = Math.floor(time / 60) % 60;
 	let hours = Math.floor(time / 3600);
 	let tail = secs.toString().padStart(2, '0') + '.' + msecs.toString().padStart(3, '0');
 	return hours == 0 ? '' + mins + ':' + tail : '' + hours + ':' + mins.toString().padStart(2, '0') + ':' + tail;
