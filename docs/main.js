@@ -225,7 +225,7 @@ function exportWinCmd(clips, options) {
 	cmd += `${ffmpeg} -f concat -i "${tmp}\\parts.txt" -c copy ${filename}<NUL\n`;
 	cmd += "DEL /Q";
 	for (let i = 0; i < clips.length; i += 1) {
-		cmd += ` "${tmp}\\part${i}.mp4"`;
+		cmd += ` "{tmp}\\part${i}.mp4"`;
 	}
 	cmd += ` "${tmp}\\parts.txt"\nRMDIR ${tmp}\n`;
 	return cmd;
