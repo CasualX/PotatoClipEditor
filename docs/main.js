@@ -220,7 +220,7 @@ function exportWinCmd(clips, options) {
 	for (let i = 0; i < clips.length; i += 1) {
 		let clip = clips[i];
 		cmd += `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec} -ss ${renderTime(clip.startTime)} -to ${renderTime(clip.endTime)} "${tmp}\\part${i}.mp4"<NUL\n`;
-		cmd += `ECHO file '$part${i}.mp4'>>"${tmp}\\parts.txt"\n`;
+		cmd += `ECHO file 'part${i}.mp4'>>"${tmp}\\parts.txt"\n`;
 	}
 	cmd += `${ffmpeg} -f concat -i "${tmp}\\parts.txt" -c copy ${filename}<NUL\n`;
 	cmd += "DEL /Q";
