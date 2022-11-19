@@ -32,6 +32,7 @@ let app = {
 				filename: "output.mp4",
 				ffmpeg: "ffmpeg.exe",
 				codec: "-vcodec h264 -acodec copy",
+				cleanup: true,
 			},
 		};
 	},
@@ -144,6 +145,7 @@ let app = {
 				this.options.ffmpeg = localStorage.getItem("PCE/" + "ffmpeg") ?? this.options.ffmpeg;
 				this.options.codec = localStorage.getItem("PCE/" + "codec") ?? this.options.codec;
 				this.options.filename = localStorage.getItem("PCE/" + "filename") ?? this.options.filename;
+				this.options.cleanup = localStorage.getItem("PCE/" + "cleanup") ?? this.options.cleanup;
 			}
 			catch (ex) {
 				console.error(ex);
@@ -223,10 +225,12 @@ function exportWinCmd(clips, options) {
 		cmd += `ECHO file 'part${i}.mp4'>>"${tmp}\\parts.txt"\n`;
 	}
 	cmd += `${ffmpeg} -f concat -i "${tmp}\\parts.txt" -c copy ${filename}<NUL\n`;
-	cmd += "DEL /Q";
-	for (let i = 0; i < clips.length; i += 1) {
-		cmd += ` "${tmp}\\part${i}.mp4"`;
+	if (options.cleanup) {
+		cmd += "DEL /Q";
+		for (let i = 0; i < clips.length; i += 1) {
+			cmd += ` "${tmp}\\part${i}.mp4"`;
+		}
+		cmd += ` "${tmp}\\parts.txt"\nRMDIR ${tmp}\n`;
 	}
-	cmd += ` "${tmp}\\parts.txt"\nRMDIR ${tmp}\n`;
 	return cmd;
 }
