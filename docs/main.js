@@ -48,6 +48,8 @@ let app = {
 					startTime: 0,
 					currentTime: 0,
 					endTime: 0,
+					startTimePresent: false,
+					endTimePresent: false,
 					url: URL.createObjectURL(file),
 					videoRef: null // Filled in later in `videoSetRef`
 				};
@@ -78,6 +80,8 @@ let app = {
 				startTime: 0,
 				currentTime: clip.currentTime,
 				endTime: 0,
+				startTimePresent: false,
+				endTimePresent: false,
 				url: clip.url,
 				videoRef: null // Filled in later in `videoSetRef`
 			};
@@ -118,12 +122,14 @@ let app = {
 		},
 		setStartTime(clip) {
 			clip.startTime = clip.videoRef.currentTime;
+			clip.startTimePresent = clip.startTime != 0.0;
 			if (clip.startTime > clip.endTime) {
 				clip.endTime = clip.videoRef.currentTime;
 			}
 		},
 		setEndTime(clip) {
 			clip.endTime = clip.videoRef.currentTime;
+			clip.endTimePresent = clip.endTime != clip.videoRef.duration;
 			if (clip.endTime < clip.startTime) {
 				clip.startTime = clip.videoRef.currentTime;
 			}
@@ -215,13 +221,17 @@ function exportWinCmd(clips, options) {
 	let filename = escapeCmd(options.filename);
 	if (clips.length == 1) {
 		let clip = clips[0];
-		return `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec} -ss ${renderTime(clip.startTime)} -to ${renderTime(clip.endTime)} ${filename}\n`;
+		let ss = clip.startTimePresent ? ` -ss ${renderTime(clip.startTime)}` : "";
+		let to = clip.endTimePresent ? ` -to ${renderTime(clip.endTime)}` : "";
+		return `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec}${ss}${to} ${filename}\n`;
 	}
 	let tmp = "tmp" + Math.random().toString(16).slice(2);
 	let cmd = `MKDIR ${tmp}\nTYPE NUL>"${tmp}\\parts.txt"\n`;
 	for (let i = 0; i < clips.length; i += 1) {
 		let clip = clips[i];
-		cmd += `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec} -ss ${renderTime(clip.startTime)} -to ${renderTime(clip.endTime)} "${tmp}\\part${i}.mp4"<NUL\n`;
+		let ss = clip.startTimePresent ? ` -ss ${renderTime(clip.startTime)}`: "";
+		let to = clip.endTimePresent ? ` -to ${renderTime(clip.endTime)}` : "";
+		cmd += `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec}${ss}${to} "${tmp}\\part${i}.mp4"<NUL\n`;
 		cmd += `ECHO file 'part${i}.mp4'>>"${tmp}\\parts.txt"\n`;
 	}
 	cmd += `${ffmpeg} -f concat -i "${tmp}\\parts.txt" -c copy ${filename}<NUL\n`;
