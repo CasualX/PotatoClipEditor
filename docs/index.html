@@ -5,7 +5,15 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Potato Clip Editor</title>
 		<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-		<script src="deps/vue.js"></script>
+		<script async src="./deps/es-module-shims.js"></script>
+		<script type="importmap">
+		{
+			"imports": {
+				"vue": "./deps/vue.esm-browser.js"
+			}
+		}
+		</script>
+		<script type="module" src="deps/vue.esm-browser.js"></script>
 		<!-- Tailwind generated classes -->
 		<link rel="stylesheet" type="text/css" href="./styles.css" />
 		<style>
