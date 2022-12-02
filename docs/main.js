@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp } from './deps/vue.esm-browser.js'
 import { exportWinCmd, renderTime } from './helpers.js'
 
 window.addEventListener("beforeunload", function (e) {
