@@ -1,6 +1,6 @@
 // import 'tailwindcss/tailwind.css';
 
-window.addEventListener('beforeunload', function(e) {
+window.addEventListener("beforeunload", function (e) {
 	e.preventDefault();
 	e.returnValue = "Are you sure you want to leave this page? Any unsaved work will be lost!";
 });
@@ -10,12 +10,12 @@ function renderTime(time) {
 	let secs = Math.floor(time % 60);
 	let mins = Math.floor(time / 60) % 60;
 	let hours = Math.floor(time / 3600);
-	let tail = secs.toString().padStart(2, '0') + '.' + msecs.toString().padStart(3, '0');
-	return hours == 0 ? '' + mins + ':' + tail : '' + hours + ':' + mins.toString().padStart(2, '0') + ':' + tail;
+	let tail = secs.toString().padStart(2, "0") + "." + msecs.toString().padStart(3, "0");
+	return hours == 0 ? "" + mins + ":" + tail : "" + hours + ":" + mins.toString().padStart(2, "0") + ":" + tail;
 }
 
 let app = {
-	el: '#app',
+	el: "#app",
 	data() {
 		return {
 			// Clip currently being previewed
@@ -51,7 +51,7 @@ let app = {
 					startTimePresent: false,
 					endTimePresent: false,
 					url: URL.createObjectURL(file),
-					videoRef: null // Filled in later in `videoSetRef`
+					videoRef: null, // Filled in later in `videoSetRef`
 				};
 				if (i == 0) {
 					this.previewKey = clip.key;
@@ -83,7 +83,7 @@ let app = {
 				startTimePresent: false,
 				endTimePresent: false,
 				url: clip.url,
-				videoRef: null // Filled in later in `videoSetRef`
+				videoRef: null, // Filled in later in `videoSetRef`
 			};
 			this.clips.splice(index + 1, 0, newClip);
 			this.timelinePreview(newClip.key);
@@ -152,21 +152,19 @@ let app = {
 				this.options.codec = localStorage.getItem("PCE/" + "codec") ?? this.options.codec;
 				this.options.filename = localStorage.getItem("PCE/" + "filename") ?? this.options.filename;
 				this.options.cleanup = localStorage.getItem("PCE/" + "cleanup") ?? this.options.cleanup;
-			}
-			catch (ex) {
+			} catch (ex) {
 				console.error(ex);
 			}
 		},
 		saveOption(variable) {
 			try {
 				localStorage.setItem("PCE/" + variable, this.options[variable]);
-			}
-			catch (ex) {
+			} catch (ex) {
 				console.error(ex);
 			}
 		},
 		copyCommand() {
-			let textArea = document.createElement('textarea');
+			let textArea = document.createElement("textarea");
 			textArea.value = exportWinCmd(this.clips, this.options);
 			document.body.appendChild(textArea);
 			textArea.select();
@@ -174,22 +172,20 @@ let app = {
 			try {
 				document.execCommand("copy");
 				success = true;
-			}
-			catch (ex) {
+			} catch (ex) {
 				console.error(ex);
 				success = false;
 			}
 			document.body.removeChild(textArea);
 			if (success) {
 				alert("The processing commands were successfully copied to your clipboard!");
-			}
-			else {
+			} else {
 				alert("There was an error copying the processing commands...");
 			}
 		},
 	},
 };
-Vue.createApp(app).mount('#app');
+Vue.createApp(app).mount("#app");
 
 // Escapes cmd.exe argument strings containing double quotes
 function escapeCmd(s) {
@@ -197,13 +193,13 @@ function escapeCmd(s) {
 	if (/^"(.*)"$/s.test(s)) {
 		return s;
 	}
-	return "\"" + s.replace("\"", "^\"") + "\"";
+	return '"' + s.replace('"', '^"') + '"';
 }
 
 // Escapes and quotes the argument according to ffmpeg's rules:
 // https://www.ffmpeg.org/ffmpeg-utils.html#Quoting-and-escaping
 function quoteFfmpeg(s) {
-	let pieces = s.split("\'");
+	let pieces = s.split("'");
 	if (pieces.length > 1) {
 		s = "";
 		for (let i = 0; i < pieces.length; i += 1) {
@@ -213,7 +209,7 @@ function quoteFfmpeg(s) {
 			s += pieces[i];
 		}
 	}
-	return "\'" + s + "\'";
+	return "'" + s + "'";
 }
 
 function exportWinCmd(clips, options) {
@@ -229,7 +225,7 @@ function exportWinCmd(clips, options) {
 	let cmd = `MKDIR ${tmp}\nTYPE NUL>"${tmp}\\parts.txt"\n`;
 	for (let i = 0; i < clips.length; i += 1) {
 		let clip = clips[i];
-		let ss = clip.startTimePresent ? ` -ss ${renderTime(clip.startTime)}`: "";
+		let ss = clip.startTimePresent ? ` -ss ${renderTime(clip.startTime)}` : "";
 		let to = clip.endTimePresent ? ` -to ${renderTime(clip.endTime)}` : "";
 		cmd += `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec}${ss}${to} "${tmp}\\part${i}.mp4"<NUL\n`;
 		cmd += `ECHO file 'part${i}.mp4'>>"${tmp}\\parts.txt"\n`;
