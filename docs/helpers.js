@@ -14,7 +14,7 @@ export function renderTime(seconds) {
 /**
  * Escapes and quotes the argument according to ffmpeg's rules:
  * https://www.ffmpeg.org/ffmpeg-utils.html#Quoting-and-escaping
- * @param {string} s 
+ * @param {string} s
  */
 export function quoteFfmpeg(s) {
 	let pieces = s.split("'");
@@ -82,9 +82,9 @@ export function exportWinCmd(clips, options) {
 
 /**
  * Escapes cmd.exe argument strings containing double quotes
- * @param {string} s 
+ * @param {string} s
  */
- function escapeCmd(s) {
+function escapeCmd(s) {
 	// If string is already quoted assume it is already escaped and just return it
 	if (/^"(.*)"$/s.test(s)) {
 		return s;
