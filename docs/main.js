@@ -1,21 +1,13 @@
-// import 'tailwindcss/tailwind.css';
+import { createApp } from './deps/vue.esm-browser.js'
+import { exportWinCmd, renderTime } from './helpers.js'
 
-window.addEventListener('beforeunload', function(e) {
+window.addEventListener("beforeunload", function (e) {
 	e.preventDefault();
 	e.returnValue = "Are you sure you want to leave this page? Any unsaved work will be lost!";
 });
 
-function renderTime(time) {
-	let msecs = Math.floor((time - Math.floor(time)) * 1000);
-	let secs = Math.floor(time % 60);
-	let mins = Math.floor(time / 60) % 60;
-	let hours = Math.floor(time / 3600);
-	let tail = secs.toString().padStart(2, '0') + '.' + msecs.toString().padStart(3, '0');
-	return hours == 0 ? '' + mins + ':' + tail : '' + hours + ':' + mins.toString().padStart(2, '0') + ':' + tail;
-}
-
 let app = {
-	el: '#app',
+	el: "#app",
 	data() {
 		return {
 			// Clip currently being previewed
@@ -36,8 +28,12 @@ let app = {
 			},
 		};
 	},
+	setup() {
+		return {
+			renderTime
+		}
+	},
 	methods: {
-		renderTime: renderTime,
 		timelineAdd(e) {
 			let files = e.target.files;
 			for (let i = 0; i < files.length; i += 1) {
@@ -51,7 +47,7 @@ let app = {
 					startTimePresent: false,
 					endTimePresent: false,
 					url: URL.createObjectURL(file),
-					videoRef: null // Filled in later in `videoSetRef`
+					videoRef: null, // Filled in later in `videoSetRef`
 				};
 				if (i == 0) {
 					this.previewKey = clip.key;
@@ -83,7 +79,7 @@ let app = {
 				startTimePresent: false,
 				endTimePresent: false,
 				url: clip.url,
-				videoRef: null // Filled in later in `videoSetRef`
+				videoRef: null, // Filled in later in `videoSetRef`
 			};
 			this.clips.splice(index + 1, 0, newClip);
 			this.timelinePreview(newClip.key);
@@ -166,7 +162,7 @@ let app = {
 			}
 		},
 		copyCommand() {
-			let textArea = document.createElement('textarea');
+			let textArea = document.createElement("textarea");
 			textArea.value = exportWinCmd(this.clips, this.options);
 			document.body.appendChild(textArea);
 			textArea.select();
@@ -189,58 +185,5 @@ let app = {
 		},
 	},
 };
-Vue.createApp(app).mount('#app');
 
-// Escapes cmd.exe argument strings containing double quotes
-function escapeCmd(s) {
-	// If string is already quoted assume it is already escaped and just return it
-	if (/^"(.*)"$/s.test(s)) {
-		return s;
-	}
-	return "\"" + s.replace("\"", "^\"") + "\"";
-}
-
-// Escapes and quotes the argument according to ffmpeg's rules:
-// https://www.ffmpeg.org/ffmpeg-utils.html#Quoting-and-escaping
-function quoteFfmpeg(s) {
-	let pieces = s.split("\'");
-	if (pieces.length > 1) {
-		s = "";
-		for (let i = 0; i < pieces.length; i += 1) {
-			if (i != 0) {
-				s += "'\\''";
-			}
-			s += pieces[i];
-		}
-	}
-	return "\'" + s + "\'";
-}
-
-function exportWinCmd(clips, options) {
-	let ffmpeg = escapeCmd(options.ffmpeg);
-	let filename = escapeCmd(options.filename);
-	if (clips.length == 1) {
-		let clip = clips[0];
-		let ss = clip.startTimePresent ? ` -ss ${renderTime(clip.startTime)}` : "";
-		let to = clip.endTimePresent ? ` -to ${renderTime(clip.endTime)}` : "";
-		return `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec}${ss}${to} ${filename}\n`;
-	}
-	let tmp = "tmp" + Math.random().toString(16).slice(2);
-	let cmd = `MKDIR ${tmp}\nTYPE NUL>"${tmp}\\parts.txt"\n`;
-	for (let i = 0; i < clips.length; i += 1) {
-		let clip = clips[i];
-		let ss = clip.startTimePresent ? ` -ss ${renderTime(clip.startTime)}`: "";
-		let to = clip.endTimePresent ? ` -to ${renderTime(clip.endTime)}` : "";
-		cmd += `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec}${ss}${to} "${tmp}\\part${i}.mp4"<NUL\n`;
-		cmd += `ECHO file 'part${i}.mp4'>>"${tmp}\\parts.txt"\n`;
-	}
-	cmd += `${ffmpeg} -f concat -i "${tmp}\\parts.txt" -c copy ${filename}<NUL\n`;
-	if (options.cleanup) {
-		cmd += "DEL /Q";
-		for (let i = 0; i < clips.length; i += 1) {
-			cmd += ` "${tmp}\\part${i}.mp4"`;
-		}
-		cmd += ` "${tmp}\\parts.txt"\nRMDIR ${tmp}\n`;
-	}
-	return cmd;
-}
+createApp(app).mount("#app");
