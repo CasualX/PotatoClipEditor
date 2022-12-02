@@ -20,11 +20,11 @@ Shift + right click the ffmpeg executable in the bin folder and choose 'Copy as 
 
 ## Development
 
-Everything is static.
+Everything is static. The stylesheet is generated with Tailwind CSS.
 
-To generate Tailwind classes for production, run `npm run build` or `npm run watch` to watch for changes.
+To generate the Tailwind CSS classes, get the standalone Tailwind CSS CLI (see [here](https://tailwindcss.com/blog/standalone-cli)) and run e.g. `./tailwindcss-windows-x64.exe -i ./input.css -o ./docs/styles.css --minify`.
 
-To format the code, run `npm run format`.
+or with `--watch` to watch for changes.
 
 ## License
 

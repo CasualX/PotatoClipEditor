@@ -152,14 +152,16 @@ let app = {
 				this.options.codec = localStorage.getItem("PCE/" + "codec") ?? this.options.codec;
 				this.options.filename = localStorage.getItem("PCE/" + "filename") ?? this.options.filename;
 				this.options.cleanup = localStorage.getItem("PCE/" + "cleanup") ?? this.options.cleanup;
-			} catch (ex) {
+			}
+			catch (ex) {
 				console.error(ex);
 			}
 		},
 		saveOption(variable) {
 			try {
 				localStorage.setItem("PCE/" + variable, this.options[variable]);
-			} catch (ex) {
+			}
+			catch (ex) {
 				console.error(ex);
 			}
 		},
@@ -172,14 +174,16 @@ let app = {
 			try {
 				document.execCommand("copy");
 				success = true;
-			} catch (ex) {
+			}
+			catch (ex) {
 				console.error(ex);
 				success = false;
 			}
 			document.body.removeChild(textArea);
 			if (success) {
 				alert("The processing commands were successfully copied to your clipboard!");
-			} else {
+			}
+			else {
 				alert("There was an error copying the processing commands...");
 			}
 		},
