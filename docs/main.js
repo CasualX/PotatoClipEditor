@@ -54,6 +54,7 @@ let app = {
 				}
 				this.clips.push(clip);
 			}
+			e.target.value = null;
 		},
 		timelineRemove(key) {
 			let index = this.clips.findIndex(clip => clip.key == key);
