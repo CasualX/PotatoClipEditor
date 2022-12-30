@@ -12,6 +12,46 @@ export function renderTime(seconds) {
 }
 
 /**
+ * Parses a video's time from renderTime back into seconds in the format [hh:]mm:ss.fff
+ * Returns null if the format is invalid.
+ * @param {string} s
+ */
+export function parseTime(s) {
+	let a = s.split(":");
+	if (a.length > 3) {
+		return null;
+	}
+	let hours = 0;
+	if (a.length >= 3) {
+		hours = parseInt(a[a.length - 3], 10);
+	}
+	let mins = 0;
+	if (a.length >= 2) {
+		mins = parseInt(a[a.length - 2], 10);
+	}
+	let seconds = 0, milis = 0;
+	if (a.length >= 1) {
+		let b = a[a.length - 1].split(".");
+		if (b.length == 2) {
+			seconds = parseInt(b[0], 10);
+			milis = parseInt(b[1], 10);
+		}
+		else if (b.length == 1) {
+			seconds = parseInt(b[0], 10);
+		}
+	}
+	else {
+		return 0;
+	}
+
+	if (isNaN(hours) || isNaN(mins) || isNaN(seconds) || isNaN(milis)) {
+		return null;
+	}
+
+	return hours * 3600.0 + mins * 60.0 + seconds + milis / 1000.0;
+}
+
+/**
  * Escapes and quotes the argument according to ffmpeg's rules:
  * https://www.ffmpeg.org/ffmpeg-utils.html#Quoting-and-escaping
  * @param {string} s

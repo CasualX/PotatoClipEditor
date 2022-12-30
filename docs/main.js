@@ -71,9 +71,12 @@ let app = {
 		timelineClone(key) {
 			let index = this.clips.findIndex(clip => clip.key == key);
 			let clip = this.clips[index];
+			let clipEndsWith = /^(.*#)(\d+)$/.exec(clip.name);
+			let clipName = clipEndsWith ? clipEndsWith[1] + (parseInt(clipEndsWith[2]) + 1) : clip.name + " #2";
+
 			let newClip = {
 				key: this.nextKey++,
-				name: clip.name,
+				name: clipName,
 				startTime: 0,
 				currentTime: clip.currentTime,
 				endTime: 0,
