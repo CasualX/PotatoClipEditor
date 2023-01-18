@@ -40,7 +40,8 @@ let app = {
 				let file = files[i];
 				let clip = {
 					key: this.nextKey++,
-					name: file.name,
+					title: file.name,
+					fileName: file.name,
 					startTime: 0,
 					currentTime: 0,
 					endTime: 0,
@@ -71,12 +72,13 @@ let app = {
 		timelineClone(key) {
 			let index = this.clips.findIndex(clip => clip.key == key);
 			let clip = this.clips[index];
-			let clipEndsWith = /^(.*#)(\d+)$/.exec(clip.name);
-			let clipName = clipEndsWith ? clipEndsWith[1] + (parseInt(clipEndsWith[2]) + 1) : clip.name + " #2";
+			let clipEndsWith = /^(.*#)(\d+)$/.exec(clip.title);
+			let clipTitle = clipEndsWith ? clipEndsWith[1] + (parseInt(clipEndsWith[2]) + 1) : clip.title + " #2";
 
 			let newClip = {
 				key: this.nextKey++,
-				name: clipName,
+				title: clipTitle,
+				fileName: clip.fileName,
 				startTime: 0,
 				currentTime: clip.currentTime,
 				endTime: 0,
