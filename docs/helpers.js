@@ -74,7 +74,8 @@ export function quoteFfmpeg(s) {
  * Exports ffmpeg commands as a batch script for Windows
  * @param {{
  * 	key: number
- * 	name: string
+ * 	title: string
+ * 	fileName: string
  * 	startTime: number
  * 	currentTime: number
  * 	endTime: number
@@ -93,12 +94,12 @@ export function quoteFfmpeg(s) {
  */
 export function exportWinCmd(clips, options) {
 	let ffmpeg = escapeCmd(options.ffmpeg);
-	let filename = escapeCmd(options.filename);
+	let fileName = escapeCmd(options.filename);
 	if (clips.length == 1) {
 		let clip = clips[0];
 		let ss = clip.startTimePresent ? ` -ss ${renderTime(clip.startTime)}` : "";
 		let to = clip.endTimePresent ? ` -to ${renderTime(clip.endTime)}` : "";
-		return `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec}${ss}${to} ${filename}\n`;
+		return `${ffmpeg} -i ${escapeCmd(clip.fileName)} ${options.codec}${ss}${to} ${fileName}\n`;
 	}
 	let tmp = "tmp" + Math.random().toString(16).slice(2);
 	let cmd = `MKDIR ${tmp}\nTYPE NUL>"${tmp}\\parts.txt"\n`;
@@ -106,10 +107,10 @@ export function exportWinCmd(clips, options) {
 		let clip = clips[i];
 		let ss = clip.startTimePresent ? ` -ss ${renderTime(clip.startTime)}` : "";
 		let to = clip.endTimePresent ? ` -to ${renderTime(clip.endTime)}` : "";
-		cmd += `${ffmpeg} -i ${escapeCmd(clip.name)} ${options.codec}${ss}${to} "${tmp}\\part${i}.mp4"<NUL\n`;
+		cmd += `${ffmpeg} -i ${escapeCmd(clip.fileName)} ${options.codec}${ss}${to} "${tmp}\\part${i}.mp4"<NUL\n`;
 		cmd += `ECHO file 'part${i}.mp4'>>"${tmp}\\parts.txt"\n`;
 	}
-	cmd += `${ffmpeg} -f concat -i "${tmp}\\parts.txt" -c copy ${filename}<NUL\n`;
+	cmd += `${ffmpeg} -f concat -i "${tmp}\\parts.txt" -c copy ${fileName}<NUL\n`;
 	if (options.cleanup) {
 		cmd += "DEL /Q";
 		for (let i = 0; i < clips.length; i += 1) {
