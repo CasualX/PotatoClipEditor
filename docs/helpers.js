@@ -112,6 +112,8 @@ export function exportWinCmd(clips, options) {
 	}
 	cmd += `${ffmpeg} -f concat -i "${tmp}\\parts.txt" -c copy ${fileName}<NUL\n`;
 	if (options.cleanup) {
+		cmd += "echo Pausing before deleting temporary files, ctrl-C to abort now\n"
+		cmd += "pause\n"
 		cmd += "DEL /Q";
 		for (let i = 0; i < clips.length; i += 1) {
 			cmd += ` "${tmp}\\part${i}.mp4"`;
